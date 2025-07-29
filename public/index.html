@@ -76,6 +76,12 @@
                         <a class="nav-link" id="optimizer-tab" data-tab="optimizer">Optimizador</a>
                     </li>
                 `;
+                // Crear pestaña para el conversor JSON
+                tabsContainer.innerHTML += `
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="json-converter-tab" data-tab="json-converter">Conversor JSON</a>
+                    </li>
+                `;
                 loadContent();
             }
 
@@ -94,6 +100,11 @@
                     contentContainer.innerHTML = `
                         <h5>Optimizador de Prompts</h5>
                         <p>Pega cualquier prompt que quieras mejorar. La IA lo reescribirá aplicando las mejores técnicas para darte una versión de calidad profesional.</p>
+                    `;
+                } else if (activeTab === 'json-converter') {
+                    contentContainer.innerHTML = `
+                        <h5>Conversor a JSON</h5>
+                        <p>Pega cualquier texto o prompt y la IA lo convertirá a un formato JSON estructurado. Ideal para extraer información o preparar datos.</p>
                     `;
                 }
             }
@@ -117,6 +128,8 @@
                     masterPrompt = lessons[lessonIndex].masterPrompt;
                 } else if (activeTab === 'optimizer') {
                     masterPrompt = optimizerMasterPrompt;
+                } else if (activeTab === 'json-converter') {
+                    masterPrompt = `Actúa como un conversor de texto a JSON. Tu única tarea es tomar el texto del usuario y convertirlo en una estructura JSON lógica y bien formada. No expliques, no des lecciones, simplemente entrega el JSON. El usuario ha enviado este texto:\n\n"""\n{userPrompt}\n"""\n\nTu única salida debe ser el JSON resultante, listo para ser copiado y pegado.`;
                 }
 
                 if (!userPrompt.trim()) {
