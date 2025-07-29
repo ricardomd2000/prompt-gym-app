@@ -1,0 +1,15 @@
+{
+  "name": "prompt-gym-app",
+  "version": "1.0.0",
+  "description": "Una aplicación interactiva para aprender sobre Prompt Engineering.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.14.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2",
+    "showdown": "^2.1.0"
+  }
+}

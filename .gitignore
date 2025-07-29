@@ -1,0 +1,4 @@
+# Archivos y directorios a ignorar por Git
+.env
+node_modules/
+.DS_Store

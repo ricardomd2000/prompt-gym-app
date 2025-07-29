@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gimnasio de Prompts</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .container { max-width: 800px; }
+        .tab-content, #feedback {
+            background-color: white;
+            padding: 25px;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .nav-tabs .nav-link { cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Gimnasio de Prompts 
+</h1>
+        <p class="text-center text-muted">Navega por los módulos o ve directo al Optimizador.</p>
+
+        <!-- Pestañas de Navegación -->
+        <ul class="nav nav-tabs" id="lesson-tabs" role="tablist">
+            <!-- Las pestañas se generarán aquí -->
+        </ul>
+
+        <!-- Contenido de las Pestañas -->
+        <div class="tab-content" id="lesson-content">
+            <!-- El contenido de la lección activa se mostrará aquí -->
+        </div>
+
+        <div class="mt-4">
+            <textarea id="user-prompt" class="form-control" rows="4" placeholder="Escribe tu prompt aquí..."></textarea>
+            <button id="submit-prompt" class="btn btn-primary mt-2 w-100">Enviar y Analizar</button>
+        </div>
+
+        <div id="feedback">
+            <h5 class="text-center text-muted">Esperando tu prompt...</h5>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+    <script src="/lessons.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let activeTab = 'lesson-0'; // Inicia en la primera lección
+
+            const tabsContainer = document.getElementById('lesson-tabs');
+            const contentContainer = document.getElementById('lesson-content');
+            const submitButton = document.getElementById('submit-prompt');
+            const userPromptInput = document.getElementById('user-prompt');
+            const feedbackDiv = document.getElementById('feedback');
+            const converter = new showdown.Converter();
+
+            const optimizerMasterPrompt = `Actúa como un Optimizador de Prompts de clase mundial. Tu única tarea es reescribir el prompt de un usuario para hacerlo dramáticamente más efectivo. No expliques, no des lecciones, simplemente entrega el prompt optimizado.\n\nAplica todas las técnicas avanzadas que conozcas: añade contexto, asigna un rol (persona), define un formato de salida claro, utiliza ejemplos (few-shot), y añade una cadena de pensamiento si es necesario.\n\nEl usuario ha enviado este prompt:\n"""\n{userPrompt}\n"""\n\nTu única salida debe ser el prompt mejorado, listo para ser copiado y pegado.`;
+
+            function loadTabs() {
+                // Crear pestañas para las lecciones
+                lessons.forEach((lesson, index) => {
+                    tabsContainer.innerHTML += `
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link ${index === 0 ? 'active' : ''}" id="lesson-${index}-tab" data-tab="lesson-${index}">Módulo ${index + 1}</a>
+                        </li>
+                    `;
+                });
+                // Crear pestaña para el optimizador
+                tabsContainer.innerHTML += `
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="optimizer-tab" data-tab="optimizer">Optimizador</a>
+                    </li>
+                `;
+                loadContent();
+            }
+
+            function loadContent() {
+                if (activeTab.startsWith('lesson-')) {
+                    const lessonIndex = parseInt(activeTab.split('-')[1]);
+                    const lesson = lessons[lessonIndex];
+                    const theoryHtml = converter.makeHtml(lesson.theory);
+                    contentContainer.innerHTML = `
+                        <h5>${lesson.title}</h5>
+                        <p><strong>Teoría:</strong></p>
+                        <div class="card card-body mb-3">${theoryHtml}</div>
+                        <p><strong>Tu Tarea:</strong> ${lesson.task}</p>
+                    `;
+                } else if (activeTab === 'optimizer') {
+                    contentContainer.innerHTML = `
+                        <h5>Optimizador de Prompts</h5>
+                        <p>Pega cualquier prompt que quieras mejorar. La IA lo reescribirá aplicando las mejores técnicas para darte una versión de calidad profesional.</p>
+                    `;
+                }
+            }
+
+            tabsContainer.addEventListener('click', (e) => {
+                if (e.target.matches('a.nav-link')) {
+                    activeTab = e.target.dataset.tab;
+                    // Actualizar clase 'active' en las pestañas
+                    tabsContainer.querySelectorAll('a.nav-link').forEach(t => t.classList.remove('active'));
+                    e.target.classList.add('active');
+                    loadContent();
+                }
+            });
+
+            submitButton.addEventListener('click', async () => {
+                const userPrompt = userPromptInput.value;
+                let masterPrompt = '';
+
+                if (activeTab.startsWith('lesson-')) {
+                    const lessonIndex = parseInt(activeTab.split('-')[1]);
+                    masterPrompt = lessons[lessonIndex].masterPrompt;
+                } else if (activeTab === 'optimizer') {
+                    masterPrompt = optimizerMasterPrompt;
+                }
+
+                if (!userPrompt.trim()) {
+                    feedbackDiv.innerHTML = '<h5>Por favor, escribe un prompt antes de enviar.</h5>';
+                    return;
+                }
+
+                feedbackDiv.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+
+                try {
+                    const response = await fetch('/api/prompt', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userPrompt, masterPrompt })
+                    });
+                    const data = await response.json();
+                    const htmlFeedback = converter.makeHtml(data.feedback);
+                    feedbackDiv.innerHTML = htmlFeedback;
+                } catch (error) {
+                    console.error('Error al contactar al servidor:', error);
+                    feedbackDiv.innerHTML = '<h5>Error</h5><p>No se pudo conectar con el servidor.</p>';
+                }
+            });
+
+            // Cargar las pestañas y el contenido inicial
+            loadTabs();
+        });
+    </script>
+</body>
+</html>
